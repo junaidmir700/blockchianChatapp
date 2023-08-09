@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<!-- the is front end code in src folder -->
+
+<head>
+  <title>Chat App</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+  <!-- <script src="app.js"></script> -->
+</head>
+<!-- style tag is for styling -->
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f2f2f2;
+    margin: 0;
+    padding: 0;
+  }
+
+  .container {
+    max-width: 600px;
+    margin: 100px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+  }
+
+  .message-container {
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    padding: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    border-radius: 5px;
+  }
+
+  .input-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .input-container input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+  }
+
+  .input-container button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 20px 0;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+  }
+
+  .input-container button:hover {
+    background-color: #45a049;
+  }
+
+  h5 {
+    margin-top: 20px;
+    font-size: 16px;
+    text-align: center;
+    display: block;
+    color: #666;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+</style>
+
+<body>
+  <div class="container">
+    <!-- heading -->
+    <h1>Chat App</h1>
+    <!-- following div has inputs and sen button -->
+    <div class="input-container">
+      <input type="text" id="name" placeholder="Enter message sender">
+      <input type="text" id="content" placeholder="Enter message content">
+      <button onclick="createMessage()">Send</button>
+    </div>
+    <h5>Chat</h5>
+    <!-- following div has messages -->
+    <div class="message-container">
+      <ul id="messages"></ul>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/4.0.3/web3.min.js"
+    integrity="sha512-6JJcxj0BUGJSEMLlevjEJQTphhShV15bkXFWgBMjXGMsrDFXwrCcYQnUVa+8yXdZYX2YiU87iXv7QRf9ol2utg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"
+    integrity="sha512-bLwLr3lzJN1cvtbClBMhKDyaD0uocWmphiqO8v0w3/z/XqUwzkM00gZq7BV3dQS9mQu0rarZMTsxlcnIHszElA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>var ChatApp = {};
+    var contractAddress = '0x391893C5434478C46Ac2Beb811D1F547908f3ccb';
+    var ABI = [
+      {
+        "constant": true,
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "name": "messages",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "sender",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "content",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "constant": false,
+        "inputs": [
+          {
+            "internalType": "string",
+            "name": "_content",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "_name",
+            "type": "string"
+          }
+        ],
+        "name": "createMessage",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "constant": true,
+        "inputs": [],
+        "name": "getMessages",
+        "outputs": [
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+              },
+              {
+                "internalType": "string",
+                "name": "content",
+                "type": "string"
+              },
+              {
+                "internalType": "string",
+                "name": "name",
+                "type": "string"
+              }
+            ],
+            "internalType": "struct Chat.Message[]",
+            "name": "",
+            "type": "tuple[]"
+          }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+      }
+    ]
+    var ChatApp = {};
+    var account;
+
+    // on screen open
+
+    window.onload = function () {
+      // Check if MetaMask is installed
+      if (typeof window.ethereum !== 'undefined') {
+        // Manually inject web3
+        window.web3 = new Web3(window.ethereum);
+        startApp();
+      } else {
+        console.log('Please install MetaMask to use this application.');
+      }
+    }
+
+    // on screen load
+
+    async function startApp() {
+      // Request access to the user's MetaMask accounts
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+      // Get the selected account
+      const accounts = await web3.eth.getAccounts();
+      account = accounts[0];
+
+      // Create a new instance of the contract
+      ChatApp = new web3.eth.Contract(ABI, contractAddress);
+
+      // Display existing messages
+      displayMessages();
+    }
+
+    // on send button click
+
+    function createMessage() {
+      var content = document.getElementById('content').value;
+      var name = document.getElementById('name').value;
+
+      if (content.trim() !== '') {
+        ChatApp.methods.createMessage(content, name).send({ from: account })
+          .on('transactionHash', function (hash) {
+            // Transaction submitted, you can show a loading indicator here
+          })
+          .on('confirmation', function (confirmationNumber, receipt) {
+            // Transaction confirmed, you can hide the loading indicator here
+            // Refresh the messages
+            // re render the messages ul
+            // reload messages
+
+            displayMessages();
+            window.refresh()
+          })
+          .on('error', function (error) {
+            // Transaction failed, handle the error here
+            console.error(error);
+          });
+      }
+      document.getElementById('content').value = '';
+    }
+
+    // on send button click
+
+    function displayMessages() {
+      ChatApp.methods.getMessages().call().then(function (result) {
+        var messagesElement = document.getElementById('messages');
+        messagesElement.innerHTML = '';
+        result.forEach(function (message) {
+          var li = document.createElement('li');
+          // append sender and content both sender should be of blue color
+          li.innerHTML = '<span style="color: blue">' + message.name + '</span>: ' + message.content;
+          // style li like a chat buble like top left corner not rounded and sender name on top with small blue text
+
+          messagesElement.appendChild(li);
+        });
+      });
+    }
+
+
+
+  </script>
+</body>
+
+</html>
